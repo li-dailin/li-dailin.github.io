@@ -2,12 +2,12 @@
 main:
   - title: "Research"
     url: /research/
+
+  - title: "Information"
+    url: /others/
     
   # - title: "Blogs"
     # url: /posts/
-    
-  - title: "Others"
-    url: /others/
     
   # - title: "Talks"
   #   url: /talks/    
