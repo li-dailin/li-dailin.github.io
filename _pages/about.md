@@ -7,10 +7,12 @@ redirect_from:
   - /about.html
 ---
 
-I'm a fourth year undergraduate student from [School of Gifted Young](https://en.scgy.ustc.edu.cn/), [University of Science and Technology of China](https://en.ustc.edu.cn/). My research interest includes computer vision, deep learning, and data science.
+===
+
+I'm a senior from [School of Gifted Young](https://en.scgy.ustc.edu.cn/), [University of Science and Technology of China](https://en.ustc.edu.cn/). My fields of interest include computer vision and deep learning.
 
 I am now advised by Assoc. Prof. [Shouhong Wan](https://cs.ustc.edu.cn/2020/0906/c23239a460133/page.htm).
 
-<!-- You can find my CV here: [XX's Curriculum Vitae](../assets/Curriculum_Vitae.pdf). -->
+You can contact me at [dailinli2020@mail.ustc.edu.cn](mailto:dailinli2020@mail.ustc.edu.cn).
 
-[Email](mailto:dailinli2020@mail.ustc.edu.cn) / [Github](https://github.com/li-dailin) / [CSDN](https://blog.csdn.net/m0_59500538?type=blog)
+<!-- You can find my CV here: [XX's Curriculum Vitae](../assets/Curriculum_Vitae.pdf). -->
