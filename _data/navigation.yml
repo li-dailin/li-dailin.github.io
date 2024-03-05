@@ -4,7 +4,7 @@ main:
     url: /research/
     
   - title: "Blogs"
-    url: /posts/
+    url: /blogs/
     
   - title: "Others"
     url: /others/
