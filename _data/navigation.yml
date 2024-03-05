@@ -4,7 +4,7 @@ main:
     url: /research/
     
   - title: "Blogs"
-    url: /year-archive/
+    url: /blogs/
     
   - title: "Others"
     url: /portfolio/
