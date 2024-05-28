@@ -13,6 +13,6 @@ I am a senior in the [School of Gifted Young](https://en.scgy.ustc.edu.cn/) at U
 
 I am currently advised by Assoc. Prof. [Shouhong Wan](https://cs.ustc.edu.cn/2020/0906/c23239a460133/page.htm).
 
-You can contact me at [dailinli2020@mail.ustc.edu.cn](mailto:dailinli2020@mail.ustc.edu.cn). Check [here](https://blog.csdn.net/m0_59500538?type=blog) for my blogs on CSDN.
+You can contact me at [dailinli@mail.ustc.edu.cn](mailto:dailinli@mail.ustc.edu.cn). Check [here](https://blog.csdn.net/m0_59500538?type=blog) for my blogs on CSDN.
 
 <!-- You can find my CV here: [XX's Curriculum Vitae](../assets/Curriculum_Vitae.pdf). -->
