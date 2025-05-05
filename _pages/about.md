@@ -13,7 +13,7 @@ I am currently pursuing graduate studies at the [School of Computer Science and 
 
 I am affiliated with the Algorithm and Data Application ([Ada@USTC](https://ada.ustc.edu.cn/){:target="_blank"}) Research Group, where I conduct research under the guidance of Professor [Guangzhong Sun](https://faculty.ustc.edu.cn/gzsun/){:target="_blank"}.
 
-For professional correspondence, I can be reached at [dailinli@mail.ustc.edu.cn](mailto:dailinli@mail.ustc.edu.cn){:target="_blank"}. My technical writings on computer science topics are archived in my [CSDN](https://blog.csdn.net/m0_59500538?type=blog){:target="_blank"} blog.
+For professional correspondence, I can be reached at [dailinli@mail.ustc.edu.cn](mailto:dailinli@mail.ustc.edu.cn){:target="_blank"}. My technical writings on computer science topics are archived in the website's [Blogs](https://li-dailin.github.io/blogs/) section, with some also posted on my [CSDN](https://blog.csdn.net/m0_59500538?type=blog){:target="_blank"}.
 
 <script type='text/javascript' id='clustrmaps' src='//cdn.clustrmaps.com/map_v2.js?cl=080808&w=300&t=tt&d=AOpQJBjagCoMGSBpafsHHXgbCJ8q_dWkYm3R1k9A54Y&co=ffffff&ct=080808&cmo=3acc3a&cmn=ff5353'></script>
 
