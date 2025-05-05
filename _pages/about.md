@@ -9,12 +9,12 @@ redirect_from:
 
 <br>
 
-I am a senior in the [School of Gifted Young](https://en.scgy.ustc.edu.cn/) at University of Science and Technology of China ([USTC](https://en.ustc.edu.cn/)). My major is Artifical Intelligence, and my fields of interest include Computer Vision, Deep Learning, and Neural Networks.
+I am currently pursuing graduate studies at the [School of Computer Science and Technology](https://en.cs.ustc.edu.cn/){:target="_blank"}, University of Science and Technology of China ([USTC](https://en.ustc.edu.cn/){:target="_blank"}), where I previously completed my undergraduate education at the institution's prestigious [School of the Gifted Young](https://en.scgy.ustc.edu.cn/){:target="_blank"}. My fields of interest include **AI applications in High-Performance Computing (HPC)** and **AI-driven educational technologies**, with a particular emphasis on advancing Large Language Models (LLMs) in these domains.
 
-I am currently advised by Assoc. Prof. [Shouhong Wan](https://cs.ustc.edu.cn/2020/0906/c23239a460133/page.htm).
+I am affiliated with the Algorithm and Data Application ([Ada@USTC](https://ada.ustc.edu.cn/){:target="_blank"}) Research Group, where I conduct research under the guidance of Professor [Guangzhong Sun](https://faculty.ustc.edu.cn/gzsun/){:target="_blank"}.
 
-You can contact me at [dailinli@mail.ustc.edu.cn](mailto:dailinli@mail.ustc.edu.cn). Check [here](https://blog.csdn.net/m0_59500538?type=blog) for my blogs on CSDN.
+For professional correspondence, I can be reached at [dailinli@mail.ustc.edu.cn](mailto:dailinli@mail.ustc.edu.cn){:target="_blank"}. My technical writings on computer science topics are archived in my [CSDN](https://blog.csdn.net/m0_59500538?type=blog){:target="_blank"} blog.
 
-<script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?d=AOpQJBjagCoMGSBpafsHHXgbCJ8q_dWkYm3R1k9A54Y&cl=ffffff&w=a"></script>
+<script type='text/javascript' id='clustrmaps' src='//cdn.clustrmaps.com/map_v2.js?cl=080808&w=300&t=tt&d=AOpQJBjagCoMGSBpafsHHXgbCJ8q_dWkYm3R1k9A54Y&co=ffffff&ct=080808&cmo=3acc3a&cmn=ff5353'></script>
 
 <!-- You can find my CV here: [XX's Curriculum Vitae](../assets/Curriculum_Vitae.pdf). -->

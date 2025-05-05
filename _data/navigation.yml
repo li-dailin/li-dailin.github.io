@@ -3,11 +3,11 @@ main:
   - title: "Research"
     url: /research/
 
+  - title: "Blogs"
+    url: /blogs/
+
   - title: "Information"
     url: /information/
-    
-  # - title: "Blogs"
-    # url: /posts/
     
   # - title: "Talks"
   #   url: /talks/    
@@ -15,7 +15,7 @@ main:
   # - title: "Teaching"
   #   url: /teaching/    
     
-  # - title: "CV"
+  # - title: "CV" 
     # url: /cv/
     
   # - title: "Guide"
