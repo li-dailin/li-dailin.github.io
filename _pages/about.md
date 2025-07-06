@@ -11,7 +11,7 @@ redirect_from:
 
 I am currently pursuing graduate studies at the [School of Computer Science and Technology](https://en.cs.ustc.edu.cn/){:target="_blank"}, University of Science and Technology of China ([USTC](https://en.ustc.edu.cn/){:target="_blank"}), where I previously completed my undergraduate education at the institution's prestigious [School of the Gifted Young](https://en.scgy.ustc.edu.cn/){:target="_blank"}. My fields of interest include **AI applications in High-Performance Computing (HPC)** and **AI-driven educational technologies**, with a particular emphasis on advancing Large Language Models (LLMs) in these domains.
 
-I am affiliated with the Algorithm and Data Application ([Ada@USTC](https://ada.ustc.edu.cn/){:target="_blank"}) Research Group, where I conduct research under the guidance of Professor [Guangzhong Sun](https://faculty.ustc.edu.cn/gzsun/){:target="_blank"}.
+I am affiliated with the Algorithm and Data Application Group ([Ada@USTC](https://ada.ustc.edu.cn/){:target="_blank"}), where I conduct research under the guidance of Professor [Guangzhong Sun](https://faculty.ustc.edu.cn/gzsun/){:target="_blank"}.
 
 For professional correspondence, I can be reached at [dailinli@mail.ustc.edu.cn](mailto:dailinli@mail.ustc.edu.cn){:target="_blank"}. My technical writings on computer science topics are archived in the website's [Blogs](https://li-dailin.github.io/blogs/) section, with some also posted on my [CSDN](https://blog.csdn.net/m0_59500538?type=blog){:target="_blank"}.
 
