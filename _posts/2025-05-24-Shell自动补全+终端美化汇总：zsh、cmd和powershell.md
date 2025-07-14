@@ -121,6 +121,7 @@ load(io.popen('C:/Users/user/AppData/Local/Programs/oh-my-posh/bin/oh-my-posh.ex
 也可以参考[配置文档](https://ohmyposh.dev/docs/configuration/general)对主题文件进行个性化配置。例如，对于 oh-my-posh 提供的 `powerlevel10k_lean` 主题，虽然它与 `powerlevel10k` 风格一致，但是我不希望显示当前时间，而是像 zsh 那样显示命令的运行时间，于是我对主题文件进行了一些修改：
 
 ```json
+{% raw %}
 {
   "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
   "blocks": [
@@ -170,6 +171,7 @@ load(io.popen('C:/Users/user/AppData/Local/Programs/oh-my-posh/bin/oh-my-posh.ex
   ],
   "version": 3
 }
+{% endraw %}
 ```
 
 美化效果如下：
