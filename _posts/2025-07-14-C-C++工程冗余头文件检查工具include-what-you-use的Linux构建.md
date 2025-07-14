@@ -71,11 +71,11 @@ iwyu 默认认为符合如下规则的 #include 语句是合理的：
   -DCMAKE_CXX_INCLUDE_WHAT_YOU_USE="iwyu;-Xiwyu;--no_fwd_decls;-resource-dir=$(clang -print-resource-dir)"
   ```
   其中，`--no_fwd_decls` 用于禁用前向声明检查，`-resource-dir` 指定 Clang 的资源目录。
-2. 编译项目的同时，iwyu 会自动分析头文件依赖并生成建议。将输出重定向一份到 `/tmp/iwyu.log` 中。
+2. 编译项目的同时，iwyu 会自动分析头文件依赖并生成建议。将终端显示的内容同时写入日志 `/tmp/iwyu.log` 中。
   ```shell
   cmake --build build -j$(nproc) 2>&1 | tee /tmp/iwyu.log
   ```
-3. 使用 include-what-you-use 项目根目录下的 `iwyu_tool.py` 脚本分析 `/tmp/iwyu.log` 中的修改建议，脚本会自动对源文件做出修改。
+3. 使用 include-what-you-use 项目根目录下的自动补丁脚本 `fix_includes.py` 分析日志中的修改建议，脚本会自动对源文件做出修改。
   ```shell
   python3 ~/include-what-you-use/fix_includes.py < /tmp/iwyu.log
   ```
