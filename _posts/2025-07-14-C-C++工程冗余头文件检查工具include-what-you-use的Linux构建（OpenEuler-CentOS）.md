@@ -21,7 +21,7 @@ iwyu 默认认为符合如下规则的 #include 语句是合理的：
 
 本文介绍在 Linux 上构建 iwyu 的过程，以 OpenEuler（属于 RHEL/CentOS 系）为例。
 
-## 安装 clang
+## 安装 Clang
 
 1. 首先，安装 Clang 及其依赖：
   ```shell
