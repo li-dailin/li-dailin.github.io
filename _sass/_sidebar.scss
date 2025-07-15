@@ -7,8 +7,8 @@
    ========================================================================== */
 
 .sidebar {
-  -webkit-transform: translate3d(0, 0 , 0);
-          transform: translate3d(0, 0 , 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
 
   @include clearfix();
   margin-bottom: 1em;
@@ -17,28 +17,33 @@
     @include span(2 of 12);
     opacity: 1;
     -webkit-transition: opacity 0.2s ease-in-out;
-            transition: opacity 0.2s ease-in-out;
+    transition: opacity 0.2s ease-in-out;
 
     &:hover {
       opacity: 1;
     }
   }
 
-
   @include breakpoint($x-large) {
     padding-right: 0;
   }
 
-  h2, h3, h4, h5, h6 {
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     margin-bottom: 0;
     font-family: $sans-serif-narrow;
   }
 
-  h3, h4 {
+  h3,
+  h4 {
     font-size: $type-size-5;
   }
 
-  p, li {
+  p,
+  li {
     font-family: $sans-serif;
     font-size: $type-size-6;
     line-height: 1.5;
@@ -116,6 +121,7 @@
     margin-bottom: 10px;
   }
 }
+
 .sidebar .author__name {
   font-family: $sans-serif;
   font-size: $type-size-5;
@@ -225,22 +231,87 @@
     }
   }
 
+  /* 修复列表项对齐问题 */
   li {
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    line-height: 1.6;
+    padding: 2px 0;
   }
 
+  /* 修复链接对齐问题 */
   a {
-    display: block;
-    margin-bottom: 5px;
-    padding-right: 5px;
-    padding-top: 2px;
-    padding-bottom: 2px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 0;
+    padding: 0;
     color: inherit;
     font-size: $type-size-5;
     text-decoration: none;
+    line-height: 1.6;
+    width: 100%;
 
     &:hover {
       text-decoration: underline;
     }
   }
+}
+
+/* 修复图标对齐的关键样式 - 保持原始图标大小 */
+.icon-pad-right {
+  margin-right: 8px;
+  display: inline-block;
+  vertical-align: middle;
+  text-align: center;
+  width: 1.2em;
+  flex-shrink: 0;
+}
+
+/* 确保Font Awesome图标对齐 */
+.author__urls {
+  i {
+    display: inline-block;
+    vertical-align: middle;
+    text-align: center;
+    width: 1.2em;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+}
+
+/* 针对特定图标的微调 */
+.author__urls {
+  .fa-location-dot {
+    margin-left: 1.5px;
+    margin-right: 6.5px;
+  }
+}
+
+/* 统一行距 - 无论是否有链接 */
+.author__urls li {
+  margin-bottom: 8px;
+  line-height: 1.6;
+  padding: 2px 0;
+}
+
+.author__urls li:last-child {
+  margin-bottom: 0;
+}
+
+/* 确保链接与文字对齐 */
+.author__urls a {
+  display: flex;
+  align-items: center;
+  line-height: 1.6;
+  padding: 0;
+}
+
+/* 确保纯文字项目（location, employer）与链接项目对齐 */
+.author__urls li:not(:has(a)) {
+  display: flex;
+  align-items: center;
+  padding: 2px 0;
+  line-height: 1.6;
 }
