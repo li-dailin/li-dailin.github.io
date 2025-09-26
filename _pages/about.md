@@ -9,7 +9,7 @@ redirect_from:
 
 <br>
 
-I am currently pursuing graduate studies at the [School of Computer Science and Technology](https://en.cs.ustc.edu.cn/){:target="_blank"}, University of Science and Technology of China ([USTC](https://en.ustc.edu.cn/){:target="_blank"}), where I previously completed my undergraduate education at the institution's prestigious [School of the Gifted Young](https://en.scgy.ustc.edu.cn/){:target="_blank"}. My fields of interest include **AI applications in High-Performance Computing (HPC)** and **AI-driven educational technologies**, with a particular emphasis on advancing Large Language Models (LLMs) in these domains.
+I am currently pursuing graduate studies at the [School of Computer Science and Technology](https://en.cs.ustc.edu.cn/){:target="_blank"}, University of Science and Technology of China ([USTC](https://en.ustc.edu.cn/){:target="_blank"}), where I previously completed my undergraduate education at the institution's prestigious [School of the Gifted Young](https://en.scgy.ustc.edu.cn/){:target="_blank"}. My research interests span **HPC for AI** and **AI for HPC**.
 
 I am affiliated with the Algorithm and Data Application Group ([Ada@USTC](https://ada.ustc.edu.cn/){:target="_blank"}), where I conduct research under the guidance of Professor [Guangzhong Sun](https://faculty.ustc.edu.cn/gzsun/){:target="_blank"}.
 
