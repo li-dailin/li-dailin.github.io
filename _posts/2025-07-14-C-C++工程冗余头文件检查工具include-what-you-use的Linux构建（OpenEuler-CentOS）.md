@@ -1,7 +1,7 @@
 ---
 title: 'C/C++ 工程冗余头文件检查工具 include-what-you-use 的 Linux 构建（OpenEuler/CentOS）'
 date: 2025-07-14
-permk: /blogs/2025/C-C++工程冗余头文件检查工具include-what-you-use的Linux构建
+permalink: /blogs/2025/C-C++工程冗余头文件检查工具include-what-you-use的Linux构建
 excerpt:
   Include-what-you-use (iwyu) 是 Google 推出，基于 Clang 的 C/C++ 工程冗余头文件检查工具。本文介绍在 Linux 上构建 iwyu 的过程，以 OpenEuler（属于 RHEL/CentOS 系）为例。 
 tags:
