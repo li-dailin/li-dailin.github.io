@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>分布式 DFS 生成树 (无Leader竞选演示)</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #1e1e1e; color: #fff; margin: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
+        h2 { margin: 10px 0; }
+        #canvas-container { position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.5); border-radius: 8px; overflow: hidden; }
+        canvas { background: #252526; display: block; }
+        #controls { margin-top: 15px; display: flex; gap: 10px; }
+        button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-start { background: #28a745; color: white; }
+        .btn-reset { background: #dc3545; color: white; }
+        .btn-step { background: #007bff; color: white; }
+        button:hover { opacity: 0.9; transform: scale(1.05); }
+        button:disabled { background: #555; cursor: not-allowed; transform: none; }
+        #status-panel { margin-top: 10px; width: 800px; height: 100px; background: #333; overflow-y: auto; padding: 10px; border: 1px solid #444; font-family: monospace; font-size: 12px; }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #444; padding-bottom: 2px; }
+        .log-high { color: #ff6b6b; } /* High ID color */
+        .log-low { color: #4dabf7; }  /* Low ID color */
+        .legend { display: flex; gap: 15px; font-size: 12px; margin-bottom: 5px; }
+        .dot { width: 10px; height: 10px; display: inline-block; border-radius: 50%; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+    <h2>Alg 2.4: 不指定根节点的 DFS 生成树构造</h2>
+    
+    <div class="legend">
+        <span><span class="dot" style="background:#ff6b6b"></span>ID 9 (强Leader)</span>
+        <span><span class="dot" style="background:#4dabf7"></span>ID 3 (弱Leader)</span>
+        <span><span class="dot" style="background:#777"></span>未唤醒/未访问</span>
+        <span><span class="dot" style="background:#ffd700"></span>消息包</span>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="simCanvas" width="800" height="450"></canvas>
+    </div>
+
+    <div id="controls">
+        <button class="btn-start" onclick="startSim()">开始演示</button>
+        <button class="btn-step" onclick="stepSim()" id="btnStep" disabled>单步执行</button>
+        <button class="btn-reset" onclick="resetSim()">重置拓扑</button>
+    </div>
+
+    <div id="status-panel" id="log"></div>
+
+    <script>
+        /** 配置参数 */
+        const NODE_COUNT = 10;
+        const SPEED = 2; // 消息移动速度
+        const NODE_RADIUS = 20;
+
+        /** 数据结构 */
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const logPanel = document.getElementById('status-panel');
+        
+        let nodes = [];
+        let messages = [];
+        let running = false;
+        let animationId;
+        
+        // 预设两个竞选者ID
+        const LEADER_A = 9; 
+        const LEADER_B = 3; 
+
+        class Node {
+            constructor(id, x, y) {
+                this.id = id;
+                this.x = x;
+                this.y = y;
+                this.neighbors = []; // 邻接表
+                
+                // Alg 2.4 状态变量
+                this.currentLeader = 0; // 当前认为的Leader ID
+                this.parent = null;     // 生成树中的父节点
+                this.children = [];     // 生成树中的子节点
+                this.unexplored = [];   // 未访问的邻居 (List structure for DFS)
+                this.status = 'SLEEPING'; // SLEEPING, ACTIVE, DONE
+            }
+
+            // 初始化 DFS 状态
+            initDFS(leaderId, parentId) {
+                this.currentLeader = leaderId;
+                this.parent = parentId;
+                this.children = [];
+                // 关键点：每次认新Leader，都要重置 unexplored
+                // 必须排除掉发来消息的那个邻居(parentId)
+                this.unexplored = [...this.neighbors].filter(n => n !== parentId);
+                this.status = 'ACTIVE';
+            }
+        }
+
+        class Message {
+            constructor(from, to, type, payload) {
+                this.from = from;
+                this.to = to;
+                this.type = type; // 'LEADER' (M), 'PARENT' (Ack), 'REJECT' (Already)
+                this.payload = payload; // Leader ID
+                this.progress = 0;
+                this.done = false;
+            }
+
+            update() {
+                this.progress += 0.015 * SPEED;
+                if (this.progress >= 1) {
+                    this.progress = 1;
+                    this.done = true;
+                }
+            }
+
+            draw() {
+                const dx = this.to.x - this.from.x;
+                const dy = this.to.y - this.from.y;
+                const x = this.from.x + dx * this.progress;
+                const y = this.from.y + dy * this.progress;
+
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffd700'; // 金色消息包
+                ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // 绘制消息类型
+                let symbol = '?';
+                if(this.type === 'LEADER') symbol = this.payload;
+                if(this.type === 'PARENT') symbol = '✓';
+                if(this.type === 'REJECT') symbol = '✕';
+                ctx.fillText(symbol, x, y);
+            }
+        }
+
+        /** 初始化图结构 */
+        function initGraph() {
+            nodes = [];
+            messages = [];
+            logPanel.innerHTML = '<div class="log-entry">系统就绪。点击“开始演示”。<br>场景：ID 9 和 ID 3 将同时发起竞选。</div>';
+            
+            // 1. 生成节点
+            for (let i = 0; i < NODE_COUNT; i++) {
+                // 简单的网格布局加随机扰动
+                const col = i % 4;
+                const row = Math.floor(i / 4);
+                const x = 100 + col * 180 + Math.random() * 40;
+                const y = 80 + row * 120 + Math.random() * 40;
+                // 分配特殊ID
+                let id = i + 1; 
+                if (i === 0) id = LEADER_A; // 强
+                else if (i === NODE_COUNT - 1) id = LEADER_B; // 弱
+                else {
+                     // 避免冲突
+                     if(id === LEADER_A) id = 99;
+                     if(id === LEADER_B) id = 88;
+                }
+                nodes.push(new Node(id, x, y));
+            }
+
+            // 2. 生成边 (保证连通性，稍微稀疏一点以便观察DFS)
+            // 先生成最小生成树骨架保证连通
+            for (let i = 1; i < NODE_COUNT; i++) {
+                const target = nodes[Math.floor(Math.random() * i)];
+                connect(nodes[i], target);
+            }
+            // 再随机加几条回边
+            for (let i = 0; i < 4; i++) {
+                const a = nodes[Math.floor(Math.random() * NODE_COUNT)];
+                const b = nodes[Math.floor(Math.random() * NODE_COUNT)];
+                if (a !== b && !a.neighbors.includes(b)) {
+                    connect(a, b);
+                }
+            }
+            
+            draw();
+        }
+
+        function connect(a, b) {
+            a.neighbors.push(b);
+            b.neighbors.push(a);
+        }
+
+        function log(msg, type) {
+            const div = document.createElement('div');
+            div.className = 'log-entry ' + (type || '');
+            div.innerHTML = `> ${msg}`;
+            logPanel.prepend(div);
+        }
+
+        /** 核心逻辑：Alg 2.4 处理消息 */
+        function processMessageArrived(msg) {
+            const receiver = msg.to;
+            const sender = msg.from;
+            const msgLeaderId = msg.payload;
+
+            // --- 情况 A: 收到 LEADER 消息 (DFS 前进) ---
+            if (msg.type === 'LEADER') {
+                
+                // 1. 发现更强的 Leader (y > leader_i) -> 吞并/更新
+                if (msgLeaderId > receiver.currentLeader) {
+                    const oldLeader = receiver.currentLeader;
+                    log(`节点 ${receiver.id} 收到 Leader ${msgLeaderId} (来自 ${sender.id})。更新：${oldLeader} -> ${msgLeaderId}。重置探索。`, 'log-high');
+                    
+                    // 核心：接受新王，认贼作父(开玩笑)，重置所有DFS状态
+                    receiver.initDFS(msgLeaderId, sender);
+                    
+                    // 尝试继续传播
+                    continueDFS(receiver);
+                } 
+                // 2. 收到比自己当前弱的 Leader (y < leader_i) -> 忽略
+                else if (msgLeaderId < receiver.currentLeader) {
+                    log(`节点 ${receiver.id} (当前信奉 ${receiver.currentLeader}) 忽略了弱 Leader ${msgLeaderId}。`, 'log-low');
+                    // 实际上这里什么都不做，这会导致发送方永远等不到回复 (在同步模型会死锁，异步模型通常用超时，或者本算法逻辑中该分支就是死胡同)
+                    // 为了演示效果，我们让接收方发一个 REJECT，虽然原算法文本写的是 "无须发送msg"，
+                    // 但为了让发送方的DFS能继续回溯，实际实现通常需要回执，或者让发送方超时。
+                    // 这里我们严格按PPT逻辑：不回应。
+                    // *但在本演示中，为了不让发送方卡死在 visual 上，我们发送 REJECT 让它回溯*
+                    sendMessage(receiver, sender, 'REJECT', msgLeaderId); 
+                }
+                // 3. 收到当前 Leader (y == leader_i) -> 环路
+                else {
+                    log(`节点 ${receiver.id} 再次收到 Leader ${msgLeaderId}。检测到环路。`, '');
+                    sendMessage(receiver, sender, 'REJECT', msgLeaderId);
+                }
+            } 
+            
+            // --- 情况 B: 收到反馈 (PARENT / REJECT) ---
+            else if (msg.type === 'PARENT' || msg.type === 'REJECT') {
+                // 只有当这个反馈是针对我当前信奉的 Leader 时才处理
+                // 如果我已经改信别人了，旧 Leader 的反馈就丢弃
+                if (msg.payload !== receiver.currentLeader) return;
+
+                if (msg.type === 'PARENT') {
+                    receiver.children.push(sender);
+                }
+
+                // 继续处理下一个邻居
+                continueDFS(receiver);
+            }
+        }
+
+        /** DFS 推进逻辑 */
+        function continueDFS(node) {
+            if (node.unexplored.length > 0) {
+                // 还有邻居没试过，取出一个发送 LEADER 消息
+                const nextNeighbor = node.unexplored.shift(); // 类似于 pop
+                sendMessage(node, nextNeighbor, 'LEADER', node.currentLeader);
+            } else {
+                // 所有邻居都试过了 (unexplored 为空)
+                if (node.parent && node.parent !== node) {
+                    // 不是根，回溯给父亲
+                    log(`节点 ${node.id} 探索完毕。回溯 -> ${node.parent.id}。`);
+                    sendMessage(node, node.parent, 'PARENT', node.currentLeader);
+                    node.status = 'DONE';
+                } else {
+                    // 是根，且无处可去 -> 终止
+                    log(`节点 ${node.id} (Leader ${node.currentLeader}) 生成树构建完成！`, 'log-high');
+                    node.status = 'DONE';
+                }
+            }
+        }
+
+        function sendMessage(from, to, type, payload) {
+            messages.push(new Message(from, to, type, payload));
+        }
+
+        /** 启动模拟 */
+        function startSim() {
+            if (running) return;
+            running = true;
+            document.getElementById('btnStep').disabled = false;
+            
+            // 模拟自发唤醒 (Spontaneous Wakeup)
+            // 挑选 ID 为 9 和 3 的节点同时醒来
+            const starterA = nodes.find(n => n.id === LEADER_A);
+            const starterB = nodes.find(n => n.id === LEADER_B);
+
+            // A 醒来
+            log(`节点 ${starterA.id} 自发唤醒 (Strong Leader)`);
+            starterA.initDFS(starterA.id, starterA); // parent = self
+            continueDFS(starterA);
+
+            // B 醒来
+            setTimeout(() => {
+                log(`节点 ${starterB.id} 自发唤醒 (Weak Leader)`, 'log-low');
+                starterB.initDFS(starterB.id, starterB);
+                continueDFS(starterB);
+            }, 800); // 稍微错开一点点时间，更有视觉效果
+
+            loop();
+        }
+
+        function stepSim() {
+            // 单步逻辑留空，本演示主要使用连续动画
+        }
+
+        function resetSim() {
+            running = false;
+            cancelAnimationFrame(animationId);
+            initGraph();
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            draw();
+            document.getElementById('btnStep').disabled = true;
+        }
+
+        /** 渲染与动画循环 */
+        function loop() {
+            if (!running) return;
+            
+            // 1. 更新消息位置
+            // 我们需要反向遍历以便安全删除
+            for (let i = messages.length - 1; i >= 0; i--) {
+                let m = messages[i];
+                m.update();
+                if (m.done) {
+                    messages.splice(i, 1);
+                    processMessageArrived(m);
+                }
+            }
+
+            draw();
+            animationId = requestAnimationFrame(loop);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 绘制所有边 (灰色背景)
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            nodes.forEach(node => {
+                node.neighbors.forEach(neigh => {
+                    ctx.moveTo(node.x, node.y);
+                    ctx.lineTo(neigh.x, neigh.y);
+                });
+            });
+            ctx.stroke();
+
+            // 2. 绘制生成的树边 (加粗有色)
+            ctx.lineWidth = 4;
+            nodes.forEach(node => {
+                if (node.parent && node.parent !== node) {
+                    // 根据 Leader ID 设置颜色
+                    if (node.currentLeader === LEADER_A) ctx.strokeStyle = '#ff6b6b'; // Red
+                    else if (node.currentLeader === LEADER_B) ctx.strokeStyle = '#4dabf7'; // Blue
+                    else ctx.strokeStyle = '#fff';
+
+                    ctx.beginPath();
+                    // 绘制从 父 -> 子 的方向 (实际上 parent 指针是从 子->父)
+                    // 这里画一条线即可
+                    ctx.moveTo(node.x, node.y);
+                    ctx.lineTo(node.parent.x, node.parent.y);
+                    ctx.stroke();
+                }
+            });
+
+            // 3. 绘制节点
+            nodes.forEach(node => {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI * 2);
+                
+                // 填充颜色
+                if (node.status === 'SLEEPING') ctx.fillStyle = '#777';
+                else if (node.currentLeader === LEADER_A) ctx.fillStyle = '#ff6b6b';
+                else if (node.currentLeader === LEADER_B) ctx.fillStyle = '#4dabf7';
+                else ctx.fillStyle = '#28a745';
+                
+                ctx.fill();
+
+                // 边框 (表示 Done 状态)
+                if (node.status === 'DONE') {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                // 绘制 ID (Node ID / Leader ID)
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText(`ID:${node.id}`, node.x, node.y - 5);
+                
+                // 显示当前信奉的 Leader
+                if (node.currentLeader > 0) {
+                    ctx.font = '10px Arial';
+                    ctx.fillStyle = '#000';
+                    ctx.fillText(`L:${node.currentLeader}`, node.x, node.y + 8);
+                }
+            });
+
+            // 4. 绘制飞行中的消息
+            messages.forEach(m => m.draw());
+        }
+
+        // 启动
+        initGraph();
+
+    </script>
+</body>
+</html>

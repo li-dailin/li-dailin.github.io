@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>均匀同步环算法演示 (Variable Speeds)</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --panel-color: #252526;
+            --text-color: #ccc;
+            --accent-color: #0e639c;
+            --node-size: 60px;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 左侧面板 */
+        #sidebar {
+            width: 320px;
+            background-color: var(--panel-color);
+            border-right: 1px solid #333;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+        }
+
+        h2 { color: #61dafb; margin-top: 0; font-size: 1.2rem; }
+        .info-box { background: #333; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.4; }
+        .highlight { color: #ffd700; font-weight: bold; }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #1177bb; }
+        button:disabled { background-color: #444; cursor: not-allowed; opacity: 0.6; }
+        button.secondary { background-color: #444; }
+        button.secondary:hover { background-color: #555; }
+
+        #log {
+            flex-grow: 1;
+            background: #111;
+            border: 1px solid #444;
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+        .log-round { color: #61dafb; border-bottom: 1px solid #333; margin-top: 5px; padding-bottom: 2px; }
+        .log-send { color: #9cdcfe; }
+        .log-wait { color: #ce9178; }
+        .log-win { color: #ffd700; font-weight: bold; }
+
+        /* 右侧画布 */
+        #main {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: radial-gradient(#2a2a2a 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        #round-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: rgba(255,255,255,0.1);
+        }
+
+        #ring-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            border: 2px dashed #444;
+            border-radius: 50%;
+        }
+
+        .node {
+            position: absolute;
+            width: var(--node-size);
+            height: var(--node-size);
+            border-radius: 50%;
+            background: #333;
+            border: 2px solid #555;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        /* 节点状态颜色 */
+        .node.asleep { border-color: #555; opacity: 0.6; }
+        .node.candidate { border-color: #4caf50; background: #1e3a1e; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
+        .node.relay { border-color: #ff9800; background: #3d2c10; } /* 被动唤醒 */
+        .node.leader { border-color: #ffd700; background: #554400; transform: scale(1.2); box-shadow: 0 0 30px #ffd700; z-index: 100; }
+
+        .node-id { font-size: 1.2rem; font-weight: bold; color: white; }
+        .node-min { font-size: 0.7rem; color: #aaa; margin-top: 2px; }
+
+        /* 缓冲区显示 (Waiting List) */
+        .buffer-list {
+            position: absolute;
+            top: -50px; /* 放在节点上方 */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+        }
+        
+        .buffer-item {
+            background: #ce9178;
+            color: #1e1e1e;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            font-weight: bold;
+            opacity: 0.9;
+            animation: popIn 0.3s ease;
+        }
+
+        /* 传输中的消息 */
+        .message {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: #0e639c;
+            border: 2px solid #4fc1ff;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            z-index: 20;
+            transition: all 0.8s ease-in-out; /* 模拟传输时间 */
+            box-shadow: 0 0 5px #0e639c;
+        }
+        .message.wakeup { background: #9b59b6; border-color: #d2b4de; } /* 唤醒消息紫色 */
+
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h2>Uniform Synchronous Ring</h2>
+    <div class="info-box">
+        规则 (Alg 3.2):<br>
+        1. <span style="color:#9b59b6">唤醒阶段</span>: 速度 1 hop/轮。<br>
+        2. <span style="color:#0e639c">延迟阶段</span>: 消息 i 延迟 <span class="highlight">2^i - 1</span> 轮转发。<br>
+        3. 小 ID (如 0) 跑得快，大 ID 跑得慢。<br>
+        <br>
+        * 点击节点切换 [Asleep/Candidate]
+    </div>
+
+    <div style="margin-bottom: 10px;">
+        <label>节点数: <span id="node-count-val">5</span></label>
+        <input type="range" id="node-count" min="3" max="6" value="5" style="width: 100%;">
+        <small style="color:#666">建议用少量节点观察延迟</small>
+    </div>
+
+    <button onclick="startSimulation()" id="btn-start">开始 (Start)</button>
+    <button onclick="nextRound()" id="btn-next" disabled>下一轮 (Next Round)</button>
+    <button class="secondary" onclick="reset()">重置 (Reset)</button>
+
+    <div id="log"></div>
+</div>
+
+<div id="main">
+    <div id="round-display">Round: 0</div>
+    <div id="ring-container"></div>
+</div>
+
+<script>
+    // --- 配置 ---
+    const RING_RADIUS = 250;
+    let NODE_COUNT = 5;
+    let nodes = [];
+    let messagesOnWire = []; // 当前正在飞行的消息
+    let round = 0;
+    let isRunning = false;
+    let simulationFinished = false;
+
+    // --- 数据结构 ---
+    class Node {
+        constructor(id, index) {
+            this.id = id;
+            this.index = index;
+            this.status = 'candidate'; // 'asleep', 'candidate', 'relay', 'leader'
+            this.minSeen = Infinity;   // 见过的最小 ID
+            this.buffer = [];          // { msgId: int, countdown: int }
+            this.element = null;       // DOM Element
+        }
+
+        // 计算延迟: 2^id - 1
+        calculateDelay(msgId) {
+            return Math.pow(2, msgId) - 1;
+        }
+    }
+
+    // --- 初始化 ---
+    function init() {
+        const container = document.getElementById('ring-container');
+        container.innerHTML = '';
+        nodes = [];
+        messagesOnWire = [];
+        round = 0;
+        isRunning = false;
+        simulationFinished = false;
+        document.getElementById('round-display').innerText = 'Round: 0';
+        document.getElementById('log').innerHTML = '<div style="color:#666">准备就绪。请选择初始状态或直接开始。</div>';
+        
+        // 生成随机小 ID (为了让延迟不至于太夸张，限制在 0 ~ NODE_COUNT+1)
+        let ids = Array.from({length: NODE_COUNT}, (_, i) => i);
+        ids = ids.sort(() => Math.random() - 0.5); // Shuffle
+
+        for (let i = 0; i < NODE_COUNT; i++) {
+            let node = new Node(ids[i], i);
+            nodes.push(node);
+
+            // DOM
+            let el = document.createElement('div');
+            el.className = 'node candidate';
+            
+            // 位置计算
+            let angle = (2 * Math.PI * i / NODE_COUNT) - Math.PI / 2;
+            let x = RING_RADIUS * Math.cos(angle) + 300 - 30;
+            let y = RING_RADIUS * Math.sin(angle) + 300 - 30;
+            
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            el.innerHTML = `
+                <div class="node-id">${node.id}</div>
+                <div class="node-min">min:-</div>
+                <div class="buffer-list" id="buffer-${i}"></div>
+            `;
+            
+            // 点击切换状态
+            el.onclick = () => toggleNodeStatus(i);
+
+            container.appendChild(el);
+            node.element = el;
+        }
+    }
+
+    function toggleNodeStatus(index) {
+        if (isRunning) return;
+        let node = nodes[index];
+        if (node.status === 'candidate') {
+            node.status = 'asleep';
+            node.element.className = 'node asleep';
+        } else {
+            node.status = 'candidate';
+            node.element.className = 'node candidate';
+        }
+    }
+
+    // --- 核心逻辑 ---
+
+    function startSimulation() {
+        isRunning = true;
+        document.getElementById('btn-start').disabled = true;
+        document.getElementById('btn-next').disabled = false;
+        
+        // Phase 1: 所有自发唤醒的节点 (Candidate) 发送第一条消息
+        // 这些消息是 "Wakeup" 消息，速度为 1 (不延迟，直到遇到醒着的节点)
+        // 但为了简化模型符合 Alg 3.2 描述：
+        // "Source msg delayed 2^i-1 rounds before being forwarded by EACH node"
+        // 这里的处理：第一跳通常不延迟，或者第一跳放入 buffer 准备发出。
+        
+        // 我们采取标准逻辑：
+        // Round 1 开始时，Candidate 将自己的 ID 发给左边。
+        // 因为这是起点，我们直接认为它们已经准备好发送了。
+        
+        log("仿真开始。Round 0。", "log-round");
+        
+        nodes.forEach(node => {
+            if (node.status === 'candidate') {
+                node.minSeen = node.id;
+                updateNodeUI(node);
+                // 初始消息放入 Buffer，Delay = 0 (立即发送)
+                addToBuffer(node, node.id, 0); 
+                log(`节点 [${node.id}] 自发唤醒，准备发送 ID ${node.id}`);
+            }
+        });
+    }
+
+    function nextRound() {
+        if (simulationFinished) return;
+
+        round++;
+        document.getElementById('round-display').innerText = `Round: ${round}`;
+        log(`--- Round ${round} ---`, "log-round");
+
+        // 1. 处理传输到达 (上一轮发出的消息现在到达)
+        // 我们假设消息在轮次之间瞬间到达或在上一轮结束时到达
+        // 实际上，为了可视化，我们先处理 "Arrivals" (逻辑)，然后处理 "Sends"
+        
+        // 处理正在 wire 上的消息到达目的地
+        let arrivedMessages = [...messagesOnWire];
+        messagesOnWire = []; // 清空 wire
+        
+        // 移除 DOM 元素 (视觉上消息已经飞到了)
+        document.querySelectorAll('.message').forEach(el => el.remove());
+
+        arrivedMessages.forEach(msg => {
+            let receiver = nodes[msg.toIndex];
+            processArrival(receiver, msg);
+        });
+
+        // 2. 处理 Buffer 倒计时 & 发送
+        nodes.forEach(node => {
+            // 处理 buffer 中的每个消息
+            // 倒序遍历以便安全删除
+            for (let i = node.buffer.length - 1; i >= 0; i--) {
+                let item = node.buffer[i];
+                
+                // 倒计时
+                if (item.countdown > 0) {
+                    item.countdown--;
+                }
+
+                // 检查是否可以发送
+                if (item.countdown <= 0) {
+                    // 发送!
+                    sendMessage(node, item.msgId);
+                    // 从 buffer 移除
+                    node.buffer.splice(i, 1);
+                }
+            }
+            updateBufferUI(node);
+        });
+    }
+
+    function processArrival(node, msg) {
+        let m = msg.val; // 消息里的 ID
+
+        // 唤醒逻辑
+        if (node.status === 'asleep') {
+            node.status = 'relay';
+            node.minSeen = Infinity; // 被动唤醒不参与选举
+            node.element.className = 'node relay';
+            log(`节点 [${node.id}] 被 ID ${m} 唤醒 (变为 Relay)`);
+        }
+
+        // 没收/转发 规则 (Alg 3.2 Slide 8 & 10)
+        // Slide 10: 
+        // if m < min: min:=m, add m to waiting (delayed)
+        // if m > min: swallowed
+        // if m == id: elected
+        
+        if (m < node.minSeen) {
+            log(`节点 [${node.id}] 收到更小 ID ${m}。更新 Min。加入 Buffer。`);
+            node.minSeen = m;
+            updateNodeUI(node);
+            
+            // 计算延迟
+            // 延迟 = 2^m - 1
+            let delay = Math.pow(2, m) - 1;
+            addToBuffer(node, m, delay);
+            
+        } else if (m > node.minSeen) {
+            // 吞并
+            // log(`节点 [${node.id}] (min:${node.minSeen}) 吞并大 ID ${m}`);
+        } else if (m === node.id) {
+            // 只有 Candidate 才能赢
+            if (node.status === 'candidate') {
+                log(`🏆 节点 [${node.id}] 收到自己的 ID！当选 Leader！`, "log-win");
+                node.status = 'leader';
+                node.element.className = 'node leader';
+                simulationFinished = true;
+                document.getElementById('btn-next').disabled = true;
+            }
+        }
+    }
+
+    function addToBuffer(node, msgId, delay) {
+        node.buffer.push({ msgId: msgId, countdown: delay });
+        updateBufferUI(node);
+        if (delay > 0) {
+            log(`..节点 [${node.id}] 延迟转发 ${msgId} (需等待 ${delay} 轮)`, "log-wait");
+        }
+    }
+
+    function sendMessage(node, msgId) {
+        let targetIndex = (node.index + 1) % NODE_COUNT; // 顺时针
+        let targetNode = nodes[targetIndex];
+
+        // 逻辑上的消息
+        messagesOnWire.push({
+            fromIndex: node.index,
+            toIndex: targetIndex,
+            val: msgId
+        });
+
+        // 视觉上的动画
+        createMessageVisual(node, targetNode, msgId);
+        log(`-> 节点 [${node.id}] 发送 ID ${msgId} 给 [${targetNode.id}]`, "log-send");
+    }
+
+    // --- UI 更新 ---
+
+    function updateNodeUI(node) {
+        let minText = node.minSeen === Infinity ? "∞" : node.minSeen;
+        node.element.querySelector('.node-min').innerText = `min: ${minText}`;
+    }
+
+    function updateBufferUI(node) {
+        let container = document.getElementById(`buffer-${node.index}`);
+        container.innerHTML = '';
+        node.buffer.forEach(item => {
+            let el = document.createElement('div');
+            el.className = 'buffer-item';
+            el.innerHTML = `ID:${item.msgId} <small>(${item.countdown}轮)</small>`;
+            container.appendChild(el);
+        });
+    }
+
+    function createMessageVisual(fromNode, toNode, val) {
+        let el = document.createElement('div');
+        el.className = 'message';
+        el.innerText = val;
+        
+        // 初始位置
+        el.style.left = fromNode.element.style.left;
+        el.style.top = fromNode.element.style.top;
+        
+        document.getElementById('ring-container').appendChild(el);
+
+        // 强制重绘
+        void el.offsetWidth;
+
+        // 移动到目标
+        el.style.left = toNode.element.style.left;
+        el.style.top = toNode.element.style.top;
+    }
+
+    function log(msg, type="") {
+        let div = document.createElement('div');
+        div.className = type;
+        div.innerText = msg;
+        let c = document.getElementById('log');
+        c.appendChild(div);
+        c.scrollTop = c.scrollHeight;
+    }
+
+    function reset() {
+        NODE_COUNT = parseInt(document.getElementById('node-count').value);
+        document.getElementById('btn-start').disabled = false;
+        document.getElementById('btn-next').disabled = true;
+        document.getElementById('node-count-val').innerText = NODE_COUNT;
+        init();
+    }
+
+    // Listener
+    document.getElementById('node-count').addEventListener('input', reset);
+
+    // Run Init
+    init();
+
+</script>
+</body>
+</html>

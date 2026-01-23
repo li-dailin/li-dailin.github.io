@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HS 算法可视化 (O(n log n))</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #fff;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* 左侧控制区 */
+        #sidebar {
+            width: 300px;
+            background-color: #252526;
+            padding: 20px;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+        }
+
+        h2 { margin-top: 0; color: #61dafb; }
+        
+        .control-group { margin-bottom: 20px; }
+        
+        button {
+            padding: 10px 15px;
+            margin: 5px 0;
+            width: 100%;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        
+        .btn-primary { background-color: #0e639c; color: white; }
+        .btn-primary:hover { background-color: #1177bb; }
+        .btn-secondary { background-color: #3c3c3c; color: white; }
+        .btn-secondary:hover { background-color: #4c4c4c; }
+
+        #log-container {
+            flex-grow: 1;
+            background-color: #111;
+            border: 1px solid #444;
+            padding: 10px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #333; padding-bottom: 2px; }
+        .log-phase { color: #dcdcaa; }
+        .log-probe { color: #4fc1ff; }
+        .log-reply { color: #ff6b6b; }
+        .log-kill { color: #808080; }
+        .log-win { color: #ffd700; font-weight: bold; }
+
+        /* 右侧画布区 */
+        #canvas-container {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #ring {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            border: 2px dashed #444;
+        }
+
+        .node {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #2d2d2d;
+            border: 2px solid #666;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .node-id { font-size: 18px; font-weight: bold; }
+        .node-phase { font-size: 10px; color: #aaa; }
+
+        /* 节点状态样式 */
+        .node.candidate { border-color: #4caf50; background-color: #1b3a1b; box-shadow: 0 0 15px #4caf50; }
+        .node.defeated { border-color: #555; background-color: #222; opacity: 0.7; }
+        .node.leader { border-color: #ffd700; background-color: #554400; box-shadow: 0 0 30px #ffd700; scale: 1.2; }
+
+        /* 消息样式 */
+        .message {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            z-index: 20;
+            transition: all 0.6s ease-in-out; /* 动画时长 */
+            box-shadow: 0 0 5px rgba(255,255,255,0.5);
+        }
+
+        .msg-probe { background-color: #007acc; border: 2px solid #80d4ff; }
+        .msg-reply { background-color: #c53030; border: 2px solid #ff8080; }
+
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        .legend-item { display: flex; align-items: center; margin: 5px 0; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h2>HS 算法演示</h2>
+    <div class="control-group">
+        <label>节点数量: <span id="node-count-val">8</span></label>
+        <input type="range" id="node-count" min="3" max="16" value="8" style="width: 100%;">
+    </div>
+    <div class="control-group">
+        <button class="btn-secondary" onclick="resetSim()">重置 / 生成新环</button>
+        <button class="btn-primary" onclick="startSim()" id="btn-start">开始选举</button>
+        <button class="btn-primary" onclick="nextStep()" id="btn-step" disabled>下一步 (Step)</button>
+        <button class="btn-secondary" onclick="autoPlay()" id="btn-auto">自动播放</button>
+    </div>
+    <div style="border-top: 1px solid #444; padding-top:10px;">
+        <strong>系统日志:</strong>
+        <div id="log-container"></div>
+    </div>
+</div>
+
+<div id="canvas-container">
+    <div id="ring">
+        </div>
+    <div class="legend">
+        <div class="legend-item"><div class="dot" style="background:#4caf50; border:2px solid #4caf50;"></div> 活跃候选者 (Candidate)</div>
+        <div class="legend-item"><div class="dot" style="background:#222; border:2px solid #555;"></div> 被淘汰/转发者 (Defeated)</div>
+        <div class="legend-item"><div class="dot" style="background:#007acc;"></div> Probe (探测消息)</div>
+        <div class="legend-item"><div class="dot" style="background:#c53030;"></div> Reply (应答消息)</div>
+        <div class="legend-item"><div class="dot" style="background:#ffd700;"></div> Leader (最终领袖)</div>
+    </div>
+</div>
+
+<script>
+    // --- 逻辑配置 ---
+    let nodes = [];
+    let messages = []; // 正在传输的消息队列
+    let messageHistory = []; // 待处理的下一步消息队列
+    let isRunning = false;
+    let autoPlayTimer = null;
+    const RING_RADIUS = 230;
+    
+    // 节点类
+    class Node {
+        constructor(id, index, total) {
+            this.id = id;
+            this.index = index; // 物理位置索引
+            this.phase = 0;     // 当前阶段 l
+            this.status = 'candidate'; // candidate, defeated, leader
+            this.repliesReceived = { left: false, right: false }; // 当前阶段收到的回复
+            this.totalNodes = total;
+        }
+
+        // 获取左邻居索引
+        getLeftIndex() { return (this.index + 1) % this.totalNodes; }
+        // 获取右邻居索引
+        getRightIndex() { return (this.index - 1 + this.totalNodes) % this.totalNodes; }
+    }
+
+    // 消息类
+    class Message {
+        constructor(type, originId, phase, hops, direction, fromIndex, toIndex) {
+            this.type = type; // 'probe' or 'reply'
+            this.originId = originId; // 发起者 ID
+            this.phase = phase; // 属于哪个阶段
+            this.hops = hops;   // Probe: 已走步数 / Reply: 无意义
+            this.direction = direction; // 'left' (顺时针) or 'right' (逆时针)
+            this.fromIndex = fromIndex;
+            this.toIndex = toIndex;
+            this.id = Math.random().toString(36).substr(2, 9); // DOM 唯一 ID
+        }
+    }
+
+    // --- 初始化与绘制 ---
+
+    function initRing() {
+        const count = parseInt(document.getElementById('node-count').value);
+        document.getElementById('node-count-val').innerText = count;
+        const container = document.getElementById('ring');
+        container.innerHTML = '';
+        nodes = [];
+        messages = [];
+        messageHistory = [];
+        document.getElementById('log-container').innerHTML = '';
+        stopAutoPlay();
+
+        // 生成随机不重复 ID
+        let ids = [];
+        while(ids.length < count) {
+            let r = Math.floor(Math.random() * 100);
+            if(ids.indexOf(r) === -1) ids.push(r);
+        }
+
+        // 创建节点
+        for (let i = 0; i < count; i++) {
+            let node = new Node(ids[i], i, count);
+            nodes.push(node);
+            
+            // DOM 元素
+            let el = document.createElement('div');
+            el.className = 'node candidate';
+            el.id = `node-${i}`;
+            
+            // 计算圆周位置
+            let angle = (2 * Math.PI * i / count) - (Math.PI / 2); // -90度使得索引0在顶部
+            let x = RING_RADIUS * Math.cos(angle) + 250 - 30; // 250是中心, 30是半径修正
+            let y = RING_RADIUS * Math.sin(angle) + 250 - 30;
+            
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            el.innerHTML = `<span class="node-id">${ids[i]}</span><span class="node-phase" id="p-${i}">Phase:0</span>`;
+            container.appendChild(el);
+        }
+
+        log("系统就绪。点击“开始选举”。");
+        document.getElementById('btn-start').disabled = false;
+        document.getElementById('btn-step').disabled = true;
+    }
+
+    // --- 算法核心逻辑 ---
+
+    function startSim() {
+        isRunning = true;
+        document.getElementById('btn-start').disabled = true;
+        document.getElementById('btn-step').disabled = false;
+        log("选举开始! 所有节点进入 Phase 0.", "log-phase");
+
+        // 所有候选者发起 Phase 0 Probe
+        nodes.forEach(node => {
+            spawnProbe(node, 'left');
+            spawnProbe(node, 'right');
+        });
+        
+        renderMessages();
+    }
+
+    function spawnProbe(node, dir) {
+        let targetIndex = dir === 'left' ? node.getLeftIndex() : node.getRightIndex();
+        let msg = new Message('probe', node.id, node.phase, 1, dir, node.index, targetIndex);
+        messages.push(msg);
+        log(`[${node.id}] 发起 Phase ${node.phase} Probe 向 ${dir} (Max跳数: ${Math.pow(2, node.phase)})`, "log-probe");
+    }
+
+    function nextStep() {
+        if (messages.length === 0) {
+            log("没有在传输的消息。系统静止。", "log-kill");
+            stopAutoPlay();
+            return;
+        }
+
+        // 1. 处理上一轮到达的消息（逻辑计算）
+        // 这里为了可视化，我们在“下一步”时，先让消息飞到目标，然后再触发逻辑。
+        // 所以逻辑是在消息“到达”后触发。
+        // 当前 messages 数组里的消息是刚刚生成或转发的，需要飞向 toIndex。
+
+        // 移动消息的 DOM 动画已经在 CSS/Render 中处理，这里模拟“时间步”
+        // 我们把当前的所有消息，全部“投递”给目标节点进行处理
+        
+        let currentBatch = [...messages];
+        messages = []; // 清空传输队列，准备接收下一轮产生的新消息
+
+        currentBatch.forEach(msg => {
+            let receiver = nodes[msg.toIndex];
+            processMessage(receiver, msg);
+        });
+
+        // 渲染新产生的消息（如果有）
+        renderMessages();
+    }
+
+    function processMessage(node, msg) {
+        let msgMaxHops = Math.pow(2, msg.phase);
+        let senderLabel = msg.type === 'probe' ? `(From ID ${msg.originId})` : `(Reply for ${msg.originId})`;
+        
+        // --- 收到 PROBE ---
+        if (msg.type === 'probe') {
+            if (msg.originId === node.id) {
+                // 转了一圈回来了 -> Leader
+                node.status = 'leader';
+                updateNodeStyle(node);
+                log(`🏆 节点 [${node.id}] 收到自己的 Probe。当选 Leader!`, "log-win");
+                stopAutoPlay();
+                document.getElementById('btn-step').disabled = true;
+                return;
+            }
+
+            if (msg.originId > node.id) {
+                // 发起者比我大 -> 我变成 defeated (如果是 candidate)
+                if (node.status === 'candidate') {
+                    node.status = 'defeated';
+                    updateNodeStyle(node);
+                    log(`[${node.id}] 被 [${msg.originId}] 击败。转为被动模式。`, "log-kill");
+                }
+
+                // 判断跳数
+                if (msg.hops < msgMaxHops) {
+                    // 继续转发
+                    let nextIndex = msg.direction === 'left' ? node.getLeftIndex() : node.getRightIndex();
+                    let newMsg = new Message('probe', msg.originId, msg.phase, msg.hops + 1, msg.direction, node.index, nextIndex);
+                    messages.push(newMsg);
+                    // log(`[${node.id}] 转发 [${msg.originId}] Probe (${msg.hops + 1}/${msgMaxHops})`, "log-probe");
+                } else {
+                    // 到达最大跳数，发送 Reply
+                    let returnDir = msg.direction === 'left' ? 'right' : 'left'; // 反向
+                    let nextIndex = returnDir === 'left' ? node.getLeftIndex() : node.getRightIndex();
+                    let replyMsg = new Message('reply', msg.originId, msg.phase, 0, returnDir, node.index, nextIndex);
+                    messages.push(replyMsg);
+                    log(`[${node.id}] Probe [${msg.originId}] 达最大距离。发送 Reply 返回。`, "log-reply");
+                }
+            } else {
+                // msg.originId < node.id -> 吞并消息
+                log(`[${node.id}] 吞并更小的 Probe [${msg.originId}]。`, "log-kill");
+            }
+        } 
+        
+        // --- 收到 REPLY ---
+        else if (msg.type === 'reply') {
+            if (msg.originId !== node.id) {
+                // 只是路过，转发 Reply
+                let nextIndex = msg.direction === 'left' ? node.getLeftIndex() : node.getRightIndex();
+                let fwdMsg = new Message('reply', msg.originId, msg.phase, 0, msg.direction, node.index, nextIndex);
+                messages.push(fwdMsg);
+                // log(`[${node.id}] 转发 Reply 给 [${msg.originId}]`, "log-reply");
+            } else {
+                // 是给我的 Reply
+                if (node.status !== 'candidate') return; // 已死掉就不处理了
+
+                // 记录收到的方向
+                // msg.direction 是消息行走的方向。如果我是 origin，消息向 'right' 走来，说明它是从我的 'left' 邻居发回来的（因为 reply 是反向走的）
+                // 简单点，看消息来源索引。
+                // 如果 msg.fromIndex == node.getLeftIndex() -> 收到 Left 侧的回复
+                // 如果 msg.fromIndex == node.getRightIndex() -> 收到 Right 侧的回复
+                
+                let fromSide = (msg.fromIndex === node.getLeftIndex()) ? 'left' : 'right';
+                
+                log(`[${node.id}] 收到来自 ${fromSide} 的 Reply (Phase ${msg.phase})`, "log-reply");
+
+                // 更新回复状态
+                if (msg.phase === node.phase) {
+                    node.repliesReceived[fromSide] = true;
+
+                    // 检查是否双向都收到
+                    if (node.repliesReceived.left && node.repliesReceived.right) {
+                        log(`🌟 [${node.id}] 双向 Reply 就绪。晋级到 Phase ${node.phase + 1}`, "log-phase");
+                        node.phase++;
+                        node.repliesReceived = { left: false, right: false }; // 重置
+                        updateNodeStyle(node);
+                        
+                        // 开始新一轮探测 (距离翻倍在 spawnProbe 逻辑里体现: 2^phase)
+                        spawnProbe(node, 'left');
+                        spawnProbe(node, 'right');
+                    }
+                }
+            }
+        }
+    }
+
+    // --- 视觉渲染 ---
+
+    function renderMessages() {
+        // 移除旧的消息 DOM
+        document.querySelectorAll('.message').forEach(el => el.remove());
+
+        messages.forEach(msg => {
+            let el = document.createElement('div');
+            el.className = `message ${msg.type === 'probe' ? 'msg-probe' : 'msg-reply'}`;
+            el.innerHTML = msg.type === 'probe' ? msg.originId : 'R';
+            el.title = `Msg from ${msg.originId}, Phase ${msg.phase}`;
+            
+            // 初始位置 (fromNode)
+            let fromNode = document.getElementById(`node-${msg.fromIndex}`);
+            let toNode = document.getElementById(`node-${msg.toIndex}`);
+            
+            // 放到容器中
+            document.getElementById('ring').appendChild(el);
+
+            // 强制重绘以确保 transition 生效
+            // 先定在起点
+            el.style.left = fromNode.style.left;
+            el.style.top = fromNode.style.top;
+            
+            // 下一帧移动到终点
+            requestAnimationFrame(() => {
+                el.style.left = toNode.style.left;
+                el.style.top = toNode.style.top;
+            });
+        });
+    }
+
+    function updateNodeStyle(node) {
+        let el = document.getElementById(`node-${node.index}`);
+        el.className = `node ${node.status}`;
+        el.querySelector('.node-phase').innerText = `Phase:${node.phase}`;
+    }
+
+    // --- 工具 ---
+
+    function log(text, type="") {
+        let div = document.createElement('div');
+        div.className = `log-entry ${type}`;
+        div.innerText = text;
+        let c = document.getElementById('log-container');
+        c.appendChild(div);
+        c.scrollTop = c.scrollHeight;
+    }
+
+    function autoPlay() {
+        if (autoPlayTimer) return;
+        document.getElementById('btn-auto').classList.add('btn-primary');
+        autoPlayTimer = setInterval(() => {
+            if (!document.getElementById('btn-step').disabled) {
+                nextStep();
+            } else {
+                stopAutoPlay();
+            }
+        }, 1200); // 1.2秒一步
+    }
+
+    function stopAutoPlay() {
+        if (autoPlayTimer) {
+            clearInterval(autoPlayTimer);
+            autoPlayTimer = null;
+            document.getElementById('btn-auto').classList.remove('btn-primary');
+        }
+    }
+
+    function resetSim() {
+        initRing();
+    }
+
+    // 监听滑块
+    document.getElementById('node-count').addEventListener('input', resetSim);
+
+    // 启动
+    initRing();
+
+</script>
+</body>
+</html>
