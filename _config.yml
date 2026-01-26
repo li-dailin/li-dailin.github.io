@@ -11,7 +11,7 @@ locale                   : "en-US"
 title                    : "Dailin Li's Homepage"
 title_separator          : "-"
 name                     : &name "Dailin Li"
-description              : &description "USTC graduate"
+description              : &description "USTC graduate, specializing in HPC for AI."
 url                      : https://li-dailin.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
 repository               : "li-dailin/li-dailin.github.io"
@@ -294,6 +294,7 @@ plugins:
   - jekyll-gist
   - jekyll-feed
   - jekyll-redirect-from
+  - jekyll-seo-tag
 # mimic GitHub Pages with --safe
 whitelist:
   - jekyll-paginate
