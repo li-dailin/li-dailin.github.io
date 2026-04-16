@@ -1,22 +1,10 @@
 # main links links
 main:
-  # - title: "Research"
-  #   url: /research/
+  - title: "Research"
+    url: /research/
 
   - title: "Blogs"
     url: /blogs/
 
   - title: "Information"
     url: /information/
-    
-  # - title: "Talks"
-  #   url: /talks/    
-  
-  # - title: "Teaching"
-  #   url: /teaching/    
-    
-  # - title: "CV" 
-    # url: /cv/
-    
-  # - title: "Guide"
-    # url: /markdown/
