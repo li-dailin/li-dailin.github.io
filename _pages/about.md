@@ -11,7 +11,7 @@ redirect_from:
 
 I am currently pursuing graduate studies at the [School of Computer Science and Technology](https://en.cs.ustc.edu.cn/){:target="_blank"}, University of Science and Technology of China ([USTC](https://en.ustc.edu.cn/){:target="_blank"}), having previously completed my undergraduate studies at the institution's prestigious [School of the Gifted Young](https://en.scgy.ustc.edu.cn/){:target="_blank"}. 
 
-My research interests lie broadly in **Machine Learning Systems (MLSys)**, with a current focus on efficient LLM inference, MoE system optimization, and high-performance AI frameworks.
+My research interests lie broadly in **Machine Learning Systems (MLSys)**, with a current focus on performance modeling, efficient ML inference, and high-performance AI frameworks.
 
 I am affiliated with the Algorithm and Data Application Group ([Ada@USTC](https://ada.ustc.edu.cn/){:target="_blank"}), where I conduct my research under the guidance of Professor [Guangzhong Sun](https://faculty.ustc.edu.cn/gzsun/){:target="_blank"}.
 
